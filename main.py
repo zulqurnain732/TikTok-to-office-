@@ -34,20 +34,17 @@ T2 = "LIOo4mkON9cLijZhF9oBf0wRwTTF0443L"
 T3 = "_m1bW5Z0U1y8odbEiRwAhhsFJe7syfdz5Y"
 REFRESH_TOKEN = T1 + T2 + T3
 
+# Fixed Scopes (Only upload scope, matching original token)
 TOKEN_DATA = {
     "refresh_token": REFRESH_TOKEN,
     "token_uri": "https://oauth2.googleapis.com/token",
     "client_id": CLIENT_ID,
     "client_secret": CLIENT_SECRET,
-    "scopes": [
-        "https://www.googleapis.com/auth/youtube.upload",
-        "https://www.googleapis.com/auth/youtube.readonly",
-    ],
+    "scopes": ["https://www.googleapis.com/auth/youtube.upload"],
 }
 
 
 def load_history():
-    """File agar mojood nahi hai to auto create karega aur IDs return karega"""
     if not os.path.exists(HISTORY_FILE):
         with open(HISTORY_FILE, "w") as f:
             pass
@@ -58,16 +55,11 @@ def load_history():
 
 
 def save_to_history(video_id):
-    """Uploaded video ID ko file me append karega"""
     with open(HISTORY_FILE, "a") as f:
         f.write(f"{video_id}\n")
 
 
 def get_next_unuploaded_video(channel_url, uploaded_ids):
-    """
-    Channel ki shuru se le kar aakhri tak tamam videos check karega.
-    Koi limit nahi hai. Line se scan karega aur pehli un-uploaded video return karega.
-    """
     cmd = [
         "yt-dlp",
         "--impersonate",
@@ -78,8 +70,7 @@ def get_next_unuploaded_video(channel_url, uploaded_ids):
     ]
 
     print(f"Fetching complete channel videos list for: {channel_url} ...")
-    
-    # Subprocess pipe line-by-line stream karega taaki saari videos bina rukawat check hon
+
     process = subprocess.Popen(
         cmd,
         stdout=subprocess.PIPE,
@@ -101,12 +92,10 @@ def get_next_unuploaded_video(channel_url, uploaded_ids):
             if not v_id:
                 continue
 
-            # Agar pehle se uploaded hai to check aage barhayein
             if v_id in uploaded_ids:
                 print(f"[Already Uploaded] Video {v_id} skip ki ja rahi hai...")
                 continue
 
-            # Pehli milti fresh video select karein
             print(f"[Fresh Video Found] ID: {v_id}")
             selected_video = {
                 "id": v_id,
@@ -119,7 +108,6 @@ def get_next_unuploaded_video(channel_url, uploaded_ids):
         except Exception:
             continue
 
-    # Process ko terminate kar dein agar desired video mil gayi ho
     process.kill()
     process.wait()
 
@@ -166,7 +154,6 @@ def get_same_day_schedule_time(minute_offset=0):
         tzinfo=pkt_tz,
     )
 
-    # Agar 9:30 PM nikal chuka ho to agle din ke liye shift karein
     if target_pkt_time <= now_pkt:
         target_pkt_time += datetime.timedelta(days=1)
 
@@ -223,7 +210,6 @@ def main():
         print(f"Scanning channel for: {category}")
         print("=" * 50)
 
-        # Shuru se check karta hua aayega jab tak saari videos check na ho jayein
         video_info = get_next_unuploaded_video(url, uploaded_ids)
 
         if not video_info:
