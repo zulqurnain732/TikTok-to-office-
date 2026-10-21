@@ -35,7 +35,7 @@ T2 = "LIOo4mkON9cLijZhF9oBf0wRwTTF0443L"
 T3 = "_m1bW5Z0U1y8odbEiRwAhhsFJe7syfdz5Y"
 REFRESH_TOKEN = T1 + T2 + T3
 
-# Token data structure tayyar kiya gaya:
+# Token data structure:
 TOKEN_DATA = {
     "refresh_token": REFRESH_TOKEN,
     "token_uri": "https://oauth2.googleapis.com/token",
@@ -123,26 +123,34 @@ def get_youtube_service():
     return build("youtube", "v3", credentials=creds)
 
 
-def get_schedule_time(days_offset=0):
+def get_same_day_schedule_time(minute_offset=0):
     """
-    Pakistan Time 9:30 PM (PKT = UTC+5)
-    21:30 PKT = 16:30 UTC
+    Same Day 9:30 PM PKT (Pakistan Time = UTC+5)
+    9:30 PM PKT = 16:30 UTC (4:30 PM UTC).
+    Workflow 5:00 PM PKT (12:00 UTC) par run hoga to same day ka 16:30 UTC target hoga.
     """
-    now_utc = datetime.datetime.now(datetime.timezone.utc)
-    target_date = (now_utc + datetime.timedelta(days=days_offset)).date()
+    # Pakistan timezone offset (UTC+5)
+    pkt_tz = datetime.timezone(datetime.timedelta(hours=5))
+    now_pkt = datetime.datetime.now(pkt_tz)
 
-    target_utc_time = datetime.datetime.combine(
-        target_date, datetime.time(16, 30), tzinfo=datetime.timezone.utc
+    # Aaj ki date par 21:30 (9:30 PM) PKT set karein
+    target_pkt_time = datetime.datetime.combine(
+        now_pkt.date(),
+        datetime.time(21, 30 + minute_offset),
+        tzinfo=pkt_tz
     )
 
-    if target_utc_time <= now_utc:
-        target_utc_time += datetime.timedelta(days=1)
+    # Agar kisi wajah se 9:30 PM guzar chuka ho tabhi agle din schedule karein
+    if target_pkt_time <= now_pkt:
+        target_pkt_time += datetime.timedelta(days=1)
 
+    # YouTube API ke liye UTC format (ISO 8601)
+    target_utc_time = target_pkt_time.astimezone(datetime.timezone.utc)
     return target_utc_time.isoformat()
 
 
-def upload_and_schedule(youtube, file_path, title, category_name, day_offset):
-    schedule_iso = get_schedule_time(day_offset)
+def upload_and_schedule(youtube, file_path, title, category_name, minute_offset):
+    schedule_iso = get_same_day_schedule_time(minute_offset)
 
     clean_title = title.replace("\n", " ")[:65]
     video_title = f"{clean_title} #{category_name} #Shorts"
@@ -194,12 +202,13 @@ def main():
         success = download_tiktok_video(video_info["url"], temp_filename)
         if success:
             try:
+                # idx ki madad se teeno videos 9:30, 9:31, aur 9:32 par schedule hongi
                 upload_and_schedule(
                     youtube,
                     temp_filename,
                     video_info["title"],
                     category,
-                    day_offset=idx,
+                    minute_offset=idx,
                 )
                 uploaded_ids.add(video_info["id"])
                 save_to_history(video_info["id"])
