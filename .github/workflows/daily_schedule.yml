@@ -1,0 +1,41 @@
+name: Daily TikTok to YouTube Schedule
+
+on:
+  schedule:
+    # Har roz 15:00 UTC (8:00 PM PKT) par auto run hoga taaki 9:30 PM PKT ke liye ready ho sake
+    - cron: '0 15 * * *'
+  workflow_dispatch: # Manual run ka option
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Downloader and Uploader
+        run: python main.py
+
+      - name: Commit and Push History
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add uploaded_ids.txt || true
+          git commit -m "Update uploaded video history [skip ci]" || true
+          git push || true
