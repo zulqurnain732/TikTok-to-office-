@@ -2,8 +2,8 @@ name: Daily TikTok to YouTube Schedule
 
 on:
   schedule:
-    # Har roz 15:00 UTC (8:00 PM PKT) par auto run hoga taaki 9:30 PM PKT ke liye ready ho sake
-    - cron: '0 15 * * *'
+    # Har roz theek 12:00 UTC (5:00 PM PKT) par auto run hoga
+    - cron: '0 12 * * *'
   workflow_dispatch: # Manual run ka option
 
 jobs:
